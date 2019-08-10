@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Created with Jaspersoft Studio version 6.0.0.final using JasperReports Library version 6.0.0  -->
-<!-- 2019-08-07T09:20:47 -->
+<!-- 2019-08-10T09:40:11 -->
 <jasperReport xmlns="http://jasperreports.sourceforge.net/jasperreports" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://jasperreports.sourceforge.net/jasperreports http://jasperreports.sourceforge.net/xsd/jasperreport.xsd" name="FactAccount" pageWidth="1305" pageHeight="792" orientation="Landscape" columnWidth="1265" leftMargin="20" rightMargin="20" topMargin="20" bottomMargin="20" uuid="e9458a06-2fc6-4743-8a3a-418f4cb5e1ba">
 	<property name="ireport.zoom" value="2.143588810000002"/>
 	<property name="ireport.x" value="1099"/>
@@ -27,7 +27,18 @@
 		<parameterDescription><![CDATA[]]></parameterDescription>
 	</parameter>
 	<queryString language="SQL">
-		<![CDATA[select 
+		<![CDATA[select  aa.f_deb, aa.f_acred, aa.f_accountid, aa.f_year, aa.f_perioname, aa.f_value, aa.f_debInicial + coalesce (sum(bb.debim),0) as f_debInicial  , aa.f_creInicial + coalesce (sum(abim),0) as f_creInicial,
+coalesce((case when ((aa.f_debInicial +  coalesce (sum(bb.debim),0) +  aa.f_deb ) - (aa.f_creInicial + coalesce (sum(abim), 0) +  aa.f_acred)) > 0 
+     then ((aa.f_debInicial +  coalesce (sum(bb.debim), 0) +  aa.f_deb ) - (aa.f_creInicial + coalesce (sum(abim), 0) +  aa.f_acred)) end ),0) as f_debfinal ,
+coalesce((case when ((aa.f_debInicial +  coalesce (sum(bb.debim),0) +  aa.f_deb ) - (aa.f_creInicial + coalesce (sum(abim), 0) +  aa.f_acred)) < 0 
+     then  abs((aa.f_debInicial +  coalesce (sum(bb.debim),0) +  aa.f_deb ) - (aa.f_creInicial + coalesce (sum(abim), 0) +  aa.f_acred)) end), 0) as f_crefinal,
+coalesce (aa.f_debInicial +  coalesce (sum(bb.debim),0) + aa.f_deb , 0) as f_dedAcc ,
+coalesce (aa.f_creInicial + coalesce (sum(bb.abim), 0) +  aa.f_acred, 0) as f_creAcc,     
+aa.value_1,aa.value_2,
+aa.value_3, aa.value_4, 
+aa.value_5, aa.value_6,
+aa.value_7, aa.value_8
+from (select  
 coalesce(sum(fa.amtacctdr), 0) as f_deb, 
 coalesce(sum(fa.amtacctcr), 0) as f_acred, 
 fa.account_id as f_accountid ,
@@ -35,33 +46,36 @@ ye.year as f_year,  pe.name as f_perioname,
  el.value || ' ' || el.name  as f_value,
 coalesce (zz.debi, 0) as  f_debInicial,
 coalesce(zz.abi, 0)  f_creInicial,
-coalesce (zz.debi, 0) +  coalesce(sum(fa.amtacctdr), 0) as f_dedAcc ,
-coalesce (zz.abi, 0) +  coalesce(sum(fa.amtacctcr), 0) as f_creAcc,
-coalesce (case when ((coalesce (zz.debi, 0) +  coalesce(sum(fa.amtacctdr), 0)) - (coalesce (zz.abi, 0) +  coalesce(sum(fa.amtacctcr), 0)) > 0 )
-     then  (coalesce (zz.debi, 0) +  coalesce(sum(fa.amtacctdr), 0)) - (coalesce (zz.abi, 0) +  coalesce(sum(fa.amtacctcr), 0)) end, 0.0) as f_debfinal ,
-coalesce (case when ((coalesce (zz.debi, 0) +  coalesce(sum(fa.amtacctdr), 0)) - (coalesce (zz.abi, 0) +  coalesce(sum(fa.amtacctcr), 0)) < 0 )
-     then  abs((coalesce (zz.debi, 0) +  coalesce(sum(fa.amtacctdr), 0)) - (coalesce (zz.abi, 0) +  coalesce(sum(fa.amtacctcr), 0))) end, 0.0 ) as f_crefinal,
-     pe.periodno,
-      split_part( el.value, '.', 1) as  value_1,
-     split_part( el.value, '.', 2) as value_2,
-     split_part( el.value, '.', 3) as  value_3,
-     split_part( el.value, '.', 4) as  value_4,
-     split_part( el.value, '.', 5) as  value_5,
-     split_part( el.value, '.', 6) as  value_6,
-     split_part( el.value, '.', 7) as  value_7,
-     split_part( el.value, '.', 8) as  value_8          
+pe.periodno,
+split_part( el.value, '.', 1) as  value_1,
+split_part( el.value, '.', 2) as value_2,
+split_part( el.value, '.', 3) as  value_3,
+split_part( el.value, '.', 4) as  value_4,
+split_part( el.value, '.', 5) as  value_5,
+split_part( el.value, '.', 6) as  value_6,
+split_part( el.value, '.', 7) as  value_7,
+split_part( el.value, '.', 8) as  value_8          
 from fact_acct fa  
          inner join c_period pe on pe.c_period_id = fa.c_period_id 
          inner join c_year ye on ye.c_year_id = pe.c_year_id
          inner join C_ElementValue el on el.C_ElementValue_id = fa.account_id 
-         left join (select sum(fac1.amtacctdr) debi,  sum(fac1.amtacctcr) as abi ,account_id, periodno
+         left join (select sum(fac1.amtacctdr) debi,  sum(fac1.amtacctcr) as abi ,account_id
                      from  fact_acct fac1 
                      inner join c_period pe1 on pe1.c_period_id = fac1.c_period_id 
-                     where  pe1.c_year_id =  $P{C_Year_ID}   
-                     group by  account_id, periodno ) as zz on ( zz.account_id =  fa.account_id and  zz.periodno = (select periodno - 1 from c_period where c_period_id = pe.c_period_id))     
-         where ye.c_year_id =  $P{C_Year_ID}   $P!{v_periodofrom}        
+                     where  pe1.c_year_id in (select c_year_id from c_year where c_year.created < (select created from c_year where c_year_id = $P{C_Year_ID} ))
+                     group by  account_id ) as zz on  zz.account_id =  fa.account_id     
+         where ye.c_year_id = $P{C_Year_ID} $P!{v_periodofrom}            
          group by  fa.account_id ,ye.year, pe.name, el.value, el.name, zz.debi, zz.abi, pe.periodno
-         order by  pe.periodno, el.value]]>
+         order by  pe.periodno, el.value) aa
+		 left join (select sum(fac01.amtacctdr) debim, sum(fac01.amtacctcr) as abim, pe01.periodno, fac01.account_id  
+		            from fact_acct fac01 
+					inner join c_period pe01 on pe01.c_period_id = fac01.c_period_id
+		            where pe01.c_year_id =  $P{C_Year_ID} 
+                    group by fac01.account_id, 	pe01.periodno ) as bb on (bb.account_id = aa.f_accountid and bb.periodno < aa.periodno)
+		group by aa.f_accountid ,aa.f_year, aa.f_perioname, aa.f_value, aa.f_debInicial, aa.f_creInicial,
+		aa.f_deb, aa.f_acred, aa.periodno, bb.account_id, aa.value_1,aa.value_2, aa.value_3, aa.value_4, aa.value_5, aa.value_6,aa.value_7, aa.value_8 	
+		order by aa.periodno         		 
+		 ]]>
 	</queryString>
 	<field name="f_deb" class="java.math.BigDecimal">
 		<fieldDescription><![CDATA[]]></fieldDescription>
